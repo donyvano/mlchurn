@@ -13,7 +13,6 @@ import optuna
 import pandas as pd
 from lightgbm import LGBMClassifier
 from sklearn.model_selection import StratifiedKFold, cross_val_score
-from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 from data.ingest import download_dataset, load_raw_dataset
@@ -57,8 +56,6 @@ def _xgb_objective(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         "gamma": trial.suggest_float("gamma", 0.0, 1.0),
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-4, 10.0, log=True),
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-4, 10.0, log=True),
-        "use_label_encoder": False,
-        "eval_metric": "logloss",
         "random_state": RANDOM_SEED,
         "n_jobs": -1,
     }
@@ -92,7 +89,7 @@ def _lgbm_objective(trial: optuna.Trial, X: np.ndarray, y: np.ndarray) -> float:
         "n_jobs": -1,
         "verbose": -1,
     }
-    clf = LGBMClassifier(**params)
+    clf: Any = LGBMClassifier(**params)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_SEED)
     scores = cross_val_score(clf, X, y, cv=cv, scoring="roc_auc", n_jobs=-1)
     return float(scores.mean())
@@ -135,8 +132,6 @@ def _tune_and_train(
     if model_type == "xgboost":
         model = XGBClassifier(
             **best_params,
-            use_label_encoder=False,
-            eval_metric="logloss",
             random_state=RANDOM_SEED,
             n_jobs=-1,
         )
@@ -231,8 +226,8 @@ def run_training_pipeline() -> dict[str, str]:
     )
 
     preprocessor = build_preprocessing_pipeline()
-    X_train_transformed = preprocessor.fit_transform(X_train)
-    X_test_transformed = preprocessor.transform(X_test)
+    X_train_transformed: np.ndarray = np.asarray(preprocessor.fit_transform(X_train))
+    X_test_transformed: np.ndarray = np.asarray(preprocessor.transform(X_test))
 
     save_pipeline(preprocessor, PIPELINE_ARTIFACT_PATH)
 
@@ -245,9 +240,9 @@ def run_training_pipeline() -> dict[str, str]:
         run_id = train_and_log(
             model_type=model_type,
             X_train=X_train_transformed,
-            y_train=y_train.values,
+            y_train=y_train.to_numpy(),
             X_test=X_test_transformed,
-            y_test=y_test.values,
+            y_test=y_test.to_numpy(),
             feature_names=feature_names,
             preprocessor=preprocessor,
             n_trials=N_TRIALS,

@@ -61,8 +61,8 @@ class TestGetLatestStagingAuc:
         assert get_latest_staging_auc(mock_client) is None
 
     def test_returns_none_on_mlflow_exception(self, mock_client: MagicMock) -> None:
-        import mlflow
-        mock_client.get_latest_versions.side_effect = mlflow.exceptions.MlflowException("err")
+        from mlflow.exceptions import MlflowException
+        mock_client.get_latest_versions.side_effect = MlflowException("err")
         assert get_latest_staging_auc(mock_client) is None
 
 
@@ -85,11 +85,10 @@ class TestPromoteStagingToProduction:
         mock_client.get_latest_versions.return_value = []
         promote_staging_to_production(mock_client, "3", archive_current=False)
 
-        mock_client.transition_model_version_stage.assert_called_once_with(
-            name=mock_client.transition_model_version_stage.call_args[1]["name"],
-            version="3",
-            stage="Production",
-        )
+        mock_client.transition_model_version_stage.assert_called_once()
+        call_kwargs = mock_client.transition_model_version_stage.call_args.kwargs
+        assert call_kwargs["version"] == "3"
+        assert call_kwargs["stage"] == "Production"
 
     def test_archives_current_production_before_promoting(self, mock_client: MagicMock) -> None:
         old_prod = _make_version("1", "run-old")
@@ -98,7 +97,7 @@ class TestPromoteStagingToProduction:
         promote_staging_to_production(mock_client, "2", archive_current=True)
 
         calls = mock_client.transition_model_version_stage.call_args_list
-        stages = [c[1]["stage"] for c in calls]
+        stages = [c.kwargs["stage"] for c in calls]
         assert "Archived" in stages
         assert "Production" in stages
 

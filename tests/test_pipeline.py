@@ -63,14 +63,14 @@ class TestBuildPreprocessingPipeline:
     def test_fit_transform_produces_array(self, sample_df: pd.DataFrame) -> None:
         X, _ = split_features_target(sample_df)
         preprocessor = build_preprocessing_pipeline()
-        transformed = preprocessor.fit_transform(X)
+        transformed = np.asarray(preprocessor.fit_transform(X))
         assert isinstance(transformed, np.ndarray)
         assert transformed.shape[0] == len(sample_df)
 
     def test_transform_has_no_nans(self, sample_df: pd.DataFrame) -> None:
         X, _ = split_features_target(sample_df)
         preprocessor = build_preprocessing_pipeline()
-        transformed = preprocessor.fit_transform(X)
+        transformed = np.asarray(preprocessor.fit_transform(X))
         assert not np.isnan(transformed).any(), "Transformed array contains NaN values"
 
     def test_handles_unknown_categories(self, sample_df: pd.DataFrame) -> None:
@@ -81,13 +81,13 @@ class TestBuildPreprocessingPipeline:
         unseen = sample_df.copy()
         unseen["Contract"] = "Lifetime"
         X_unseen, _ = split_features_target(unseen)
-        result = preprocessor.transform(X_unseen)
+        result = np.asarray(preprocessor.transform(X_unseen))
         assert not np.isnan(result).any()
 
     def test_numeric_features_are_scaled(self, sample_df: pd.DataFrame) -> None:
         X, _ = split_features_target(sample_df)
         preprocessor = build_preprocessing_pipeline()
-        transformed = preprocessor.fit_transform(X)
+        transformed = np.asarray(preprocessor.fit_transform(X))
         n_numeric = len(NUMERIC_FEATURES)
         numeric_part = transformed[:, :n_numeric]
         assert numeric_part.std(axis=0).mean() < 5.0

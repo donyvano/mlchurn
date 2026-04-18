@@ -130,5 +130,5 @@ def get_feature_names(preprocessor: ColumnTransformer) -> list[str]:
         List of feature name strings in the same order as the transformed columns.
     """
     ohe: OneHotEncoder = preprocessor.named_transformers_["categorical"]["encoder"]
-    cat_feature_names: list[str] = ohe.get_feature_names_out(CATEGORICAL_FEATURES).tolist()
+    cat_feature_names = [str(f) for f in ohe.get_feature_names_out(CATEGORICAL_FEATURES)]
     return NUMERIC_FEATURES + cat_feature_names

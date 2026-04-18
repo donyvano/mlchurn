@@ -3,8 +3,6 @@
 import os
 import random
 from datetime import datetime, timedelta
-from typing import Optional
-
 import requests
 import streamlit as st
 
@@ -24,7 +22,7 @@ from dashboard.styles.theme import (
 )
 
 
-def _fetch_model_info(api_url: str) -> Optional[dict]:
+def _fetch_model_info(api_url: str) -> dict | None:
     """Fetch model metadata from the API /model-info endpoint.
 
     Args:

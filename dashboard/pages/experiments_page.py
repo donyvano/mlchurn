@@ -1,10 +1,9 @@
 """Experiments page: MLflow run history and model comparison."""
 
 import os
-from typing import Optional
-
 import mlflow
 import pandas as pd
+from mlflow.tracking import MlflowClient
 import streamlit as st
 
 from dashboard.components.charts import metric_scatter_chart
@@ -20,7 +19,7 @@ MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "churn-prediction")
 
 
-def _fetch_runs() -> Optional[pd.DataFrame]:
+def _fetch_runs() -> pd.DataFrame | None:
     """Query MLflow for all runs in the experiment.
 
     Returns:
@@ -28,7 +27,7 @@ def _fetch_runs() -> Optional[pd.DataFrame]:
     """
     try:
         mlflow.set_tracking_uri(MLFLOW_URI)
-        client = mlflow.tracking.MlflowClient()
+        client = MlflowClient()
         experiment = client.get_experiment_by_name(EXPERIMENT_NAME)
         if experiment is None:
             return None

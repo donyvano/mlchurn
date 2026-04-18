@@ -5,12 +5,13 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import mlflow
 import mlflow.pyfunc
 import numpy as np
 import pandas as pd
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class LoadedModel:
     run_id: str
     metrics: dict[str, float]
     parameters: dict[str, str]
-    registered_at: Optional[str]
+    registered_at: str | None
 
 
 def load_production_model() -> LoadedModel:
@@ -51,7 +52,7 @@ def load_production_model() -> LoadedModel:
 
     try:
         versions = client.get_latest_versions(MODEL_NAME, stages=["Production"])
-    except mlflow.exceptions.MlflowException as exc:
+    except MlflowException as exc:
         raise RuntimeError(
             f"Cannot connect to MLflow at {MLFLOW_TRACKING_URI}: {exc}"
         ) from exc
@@ -63,6 +64,8 @@ def load_production_model() -> LoadedModel:
         )
 
     latest = versions[0]
+    if latest.run_id is None:
+        raise RuntimeError(f"Production model version {latest.version} has no associated run_id")
     model_uri = f"models:/{MODEL_NAME}/Production"
 
     logger.info(

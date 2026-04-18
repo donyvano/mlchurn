@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 import os
 from datetime import datetime, timedelta
+from typing import Any
 
-from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow import DAG  # type: ignore[import-untyped]
+from airflow.operators.python import PythonOperator  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ DAG_PARAMS = {
 }
 
 
-def task_ingest_data(**context: dict) -> str:
+def task_ingest_data(**context: Any) -> str:
     """Download and cache the Telco Churn dataset.
 
     Args:
@@ -45,7 +46,7 @@ def task_ingest_data(**context: dict) -> str:
     return str(path)
 
 
-def task_validate_schema(**context: dict) -> None:
+def task_validate_schema(**context: Any) -> None:
     """Validate the raw dataset schema and reject if checks fail.
 
     Args:
@@ -63,7 +64,7 @@ def task_validate_schema(**context: dict) -> None:
     logger.info("Schema validation passed — %d rows", len(df))
 
 
-def task_run_preprocessing(**context: dict) -> str:
+def task_run_preprocessing(**context: Any) -> str:
     """Fit the preprocessing pipeline and save it to disk.
 
     Args:
@@ -94,7 +95,7 @@ def task_run_preprocessing(**context: dict) -> str:
     return str(pipeline_path)
 
 
-def task_train_models(**context: dict) -> dict[str, str]:
+def task_train_models(**context: Any) -> dict[str, str]:
     """Run full Optuna training for XGBoost and LightGBM.
 
     Args:
@@ -118,7 +119,7 @@ def task_train_models(**context: dict) -> dict[str, str]:
     return run_ids
 
 
-def task_evaluate(**context: dict) -> None:
+def task_evaluate(**context: Any) -> None:
     """Log evaluation summary for the latest Staging model.
 
     Args:
@@ -138,7 +139,7 @@ def task_evaluate(**context: dict) -> None:
         logger.warning("No Staging model found for evaluation step")
 
 
-def task_promote_if_better(**context: dict) -> bool:
+def task_promote_if_better(**context: Any) -> bool:
     """Promote Staging model to Production if it beats current prod by threshold.
 
     Args:
@@ -160,7 +161,7 @@ def task_promote_if_better(**context: dict) -> bool:
     return promoted
 
 
-def task_notify(**context: dict) -> None:
+def task_notify(**context: Any) -> None:
     """Log pipeline completion summary (extend with Slack/email integration).
 
     Args:

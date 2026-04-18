@@ -3,8 +3,6 @@
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -50,7 +48,7 @@ def _compute_psi(expected: np.ndarray, actual: np.ndarray, n_bins: int = 10) -> 
     return round(float(psi), 4)
 
 
-def _load_reference_data() -> Optional[pd.DataFrame]:
+def _load_reference_data() -> pd.DataFrame | None:
     """Try to load the raw training data for PSI reference distribution.
 
     Returns:
@@ -98,7 +96,7 @@ def _build_psi_table(reference: pd.DataFrame, live: pd.DataFrame) -> pd.DataFram
     for col in NUMERIC_FEATURES:
         if col not in reference.columns or col not in live.columns:
             continue
-        psi = _compute_psi(reference[col].values, live[col].values)
+        psi = _compute_psi(reference[col].to_numpy(), live[col].to_numpy())
         if psi < 0.1:
             status = " Stable"
             status_type = "success"

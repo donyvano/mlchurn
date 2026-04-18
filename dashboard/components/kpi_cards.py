@@ -1,7 +1,5 @@
 """Reusable KPI card components for the ChurnIQ dashboard."""
 
-from typing import Optional
-
 import streamlit as st
 
 from dashboard.styles.theme import (
@@ -20,8 +18,8 @@ from dashboard.styles.theme import (
 def kpi_card(
     label: str,
     value: str,
-    delta: Optional[str] = None,
-    delta_positive: Optional[bool] = None,
+    delta: str | None = None,
+    delta_positive: bool | None = None,
     accent_color: str = ACCENT_PRIMARY,
     icon: str = "",
 ) -> None:

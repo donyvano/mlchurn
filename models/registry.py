@@ -2,9 +2,9 @@
 
 import logging
 import os
-from typing import Optional
 
 import mlflow
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def _get_client() -> MlflowClient:
     return MlflowClient()
 
 
-def get_latest_staging_auc(client: MlflowClient) -> Optional[tuple[str, float]]:
+def get_latest_staging_auc(client: MlflowClient) -> tuple[str, float] | None:
     """Retrieve the AUC-ROC of the latest model version in Staging.
 
     Args:
@@ -31,7 +31,7 @@ def get_latest_staging_auc(client: MlflowClient) -> Optional[tuple[str, float]]:
     """
     try:
         versions = client.get_latest_versions(MODEL_NAME, stages=["Staging"])
-    except mlflow.exceptions.MlflowException:
+    except MlflowException:
         logger.warning("Model '%s' not found in registry", MODEL_NAME)
         return None
 
@@ -40,6 +40,9 @@ def get_latest_staging_auc(client: MlflowClient) -> Optional[tuple[str, float]]:
         return None
 
     latest = versions[0]
+    if latest.run_id is None:
+        logger.warning("Staging model v%s has no associated run_id", latest.version)
+        return None
     run = client.get_run(latest.run_id)
     auc = run.data.metrics.get("auc_roc")
 
@@ -50,7 +53,7 @@ def get_latest_staging_auc(client: MlflowClient) -> Optional[tuple[str, float]]:
     return latest.version, float(auc)
 
 
-def get_current_production_auc(client: MlflowClient) -> Optional[tuple[str, float]]:
+def get_current_production_auc(client: MlflowClient) -> tuple[str, float] | None:
     """Retrieve the AUC-ROC of the current Production model version.
 
     Args:
@@ -61,13 +64,15 @@ def get_current_production_auc(client: MlflowClient) -> Optional[tuple[str, floa
     """
     try:
         versions = client.get_latest_versions(MODEL_NAME, stages=["Production"])
-    except mlflow.exceptions.MlflowException:
+    except MlflowException:
         return None
 
     if not versions:
         return None
 
     latest = versions[0]
+    if latest.run_id is None:
+        return None
     run = client.get_run(latest.run_id)
     auc = run.data.metrics.get("auc_roc")
     if auc is None:
@@ -129,6 +134,10 @@ def run_promotion_check(threshold: float = PROMOTION_THRESHOLD) -> bool:
         return True
 
     prod_version, prod_auc = production
+    if prod_auc == 0:
+        logger.warning("Production AUC is 0 — promoting Staging v%s unconditionally", staging_version)
+        promote_staging_to_production(client, staging_version)
+        return True
     relative_improvement = (staging_auc - prod_auc) / prod_auc
 
     logger.info(

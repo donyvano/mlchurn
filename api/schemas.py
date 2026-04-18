@@ -1,9 +1,8 @@
 """Pydantic request/response schemas for the churn prediction API."""
 
 from enum import Enum
-from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ContractType(str, Enum):
@@ -48,7 +47,7 @@ class CustomerFeatures(BaseModel):
     MonthlyCharges: float = Field(..., ge=0.0, le=500.0, description="Monthly bill in USD")
     TotalCharges: float = Field(..., ge=0.0, description="Total billed to date in USD")
 
-    model_config = {"json_schema_extra": {
+    model_config = ConfigDict(json_schema_extra={
         "example": {
             "gender": "Female",
             "SeniorCitizen": 0,
@@ -70,7 +69,7 @@ class CustomerFeatures(BaseModel):
             "MonthlyCharges": 70.35,
             "TotalCharges": 843.40,
         }
-    }}
+    })
 
 
 class PredictionResponse(BaseModel):
@@ -101,4 +100,4 @@ class ModelInfoResponse(BaseModel):
     run_id: str
     metrics: dict[str, float]
     parameters: dict[str, str]
-    registered_at: Optional[str]
+    registered_at: str | None

@@ -111,16 +111,8 @@ async def predict_churn(customer: CustomerFeatures) -> PredictionResponse:
     """
     loaded = _get_loaded_model()
 
-    features = customer.model_dump()
-    features["InternetService"] = features["InternetService"].value if hasattr(
-        features["InternetService"], "value"
-    ) else features["InternetService"]
-    features["Contract"] = features["Contract"].value if hasattr(
-        features["Contract"], "value"
-    ) else features["Contract"]
-    features["PaymentMethod"] = features["PaymentMethod"].value if hasattr(
-        features["PaymentMethod"], "value"
-    ) else features["PaymentMethod"]
+    # Pydantic v2 model_dump() serialises enum fields to their .value strings automatically
+    features = customer.model_dump(mode="json")
 
     try:
         prob, label, confidence, pred_id, _ = predict(loaded, features)

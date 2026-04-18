@@ -1,7 +1,5 @@
 """Plotly chart factory functions for the ChurnIQ dashboard."""
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -25,7 +23,7 @@ from dashboard.styles.theme import (
 def _base_fig(**kwargs) -> Figure:
     """Return a Figure with the shared dark layout applied."""
     fig = go.Figure(**kwargs)
-    fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_layout(PLOTLY_LAYOUT)
     return fig
 
 
@@ -100,7 +98,7 @@ def confusion_matrix_chart(cm: list[list[int]]) -> Figure:
         )
     )
     fig.update_layout(
-        **PLOTLY_LAYOUT,
+        PLOTLY_LAYOUT,
         title=dict(text="Confusion Matrix", font=dict(color=TEXT_PRIMARY, size=14)),
         xaxis_title="Predicted",
         yaxis_title="Actual",
@@ -192,7 +190,7 @@ def churn_gauge(probability: float) -> Figure:
         )
     )
     fig.update_layout(
-        **PLOTLY_LAYOUT,
+        PLOTLY_LAYOUT,
         height=260,
         margin=dict(l=20, r=20, t=20, b=20),
     )

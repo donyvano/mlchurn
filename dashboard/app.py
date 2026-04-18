@@ -19,10 +19,7 @@ inject_css()
 API_URL = os.getenv("DASHBOARD_API_URL", "http://localhost:8000")
 sidebar_state = render_sidebar(api_url=API_URL)
 
-if "api_url" not in st.session_state:
-    st.session_state["api_url"] = sidebar_state["api_url"]
-else:
-    st.session_state["api_url"] = sidebar_state["api_url"]
+st.session_state["api_url"] = sidebar_state["api_url"]
 
 if sidebar_state["auto_refresh"]:
     import time

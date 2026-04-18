@@ -1,10 +1,13 @@
 """Metrics computation and MLflow artifact logging for churn models."""
 
-import io
+import joblib
 import logging
+import tempfile
+from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import mlflow
 import numpy as np
 import pandas as pd
@@ -45,7 +48,7 @@ def compute_metrics(model: Any, X_test: np.ndarray, y_test: np.ndarray) -> dict[
     }
 
 
-def _plot_roc_curve(model: Any, X_test: np.ndarray, y_test: np.ndarray) -> plt.Figure:
+def _plot_roc_curve(model: Any, X_test: np.ndarray, y_test: np.ndarray) -> Figure:
     """Generate a styled ROC curve figure.
 
     Args:
@@ -73,7 +76,7 @@ def _plot_roc_curve(model: Any, X_test: np.ndarray, y_test: np.ndarray) -> plt.F
     return fig
 
 
-def _plot_confusion_matrix(model: Any, X_test: np.ndarray, y_test: np.ndarray) -> plt.Figure:
+def _plot_confusion_matrix(model: Any, X_test: np.ndarray, y_test: np.ndarray) -> Figure:
     """Generate a styled confusion matrix heatmap.
 
     Args:
@@ -103,7 +106,7 @@ def _plot_confusion_matrix(model: Any, X_test: np.ndarray, y_test: np.ndarray) -
 
 def _plot_feature_importances(
     model: Any, feature_names: list[str], top_n: int = 20
-) -> plt.Figure:
+) -> Figure:
     """Generate a horizontal bar chart of the top-N feature importances.
 
     Args:
@@ -122,7 +125,7 @@ def _plot_feature_importances(
     fig, ax = plt.subplots(figsize=(8, 6), facecolor="#0A0F1E")
     ax.set_facecolor("#0A0F1E")
 
-    colors = plt.cm.cool(np.linspace(0.3, 0.9, len(top_features)))
+    colors = plt.colormaps["cool"](np.linspace(0.3, 0.9, len(top_features)))
     ax.barh(top_features, top_values, color=colors)
 
     ax.set_title("Feature Importances (Top 20)", color="white", fontsize=13, pad=12)
@@ -135,17 +138,14 @@ def _plot_feature_importances(
     return fig
 
 
-def _fig_to_mlflow_artifact(fig: plt.Figure, filename: str) -> None:
-    """Save a matplotlib figure to a PNG buffer and log it to MLflow.
+def _fig_to_mlflow_artifact(fig: Figure, filename: str) -> None:
+    """Log a matplotlib figure as an MLflow artifact using log_figure.
 
     Args:
-        fig: Figure to save.
-        filename: Artifact filename within the MLflow run.
+        fig: Figure to log.
+        filename: Artifact path within the MLflow run (e.g. 'plots/roc.png').
     """
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-    buf.seek(0)
-    mlflow.log_image(buf.read(), filename)
+    mlflow.log_figure(fig, filename)
     plt.close(fig)
 
 
@@ -167,10 +167,6 @@ def log_artifacts_to_mlflow(
         model_type: "xgboost" or "lightgbm" (used in artifact naming).
         preprocessor: Fitted sklearn ColumnTransformer to log as artifact.
     """
-    import tempfile
-    import joblib
-    import os
-
     roc_fig = _plot_roc_curve(model, X_test, y_test)
     _fig_to_mlflow_artifact(roc_fig, f"plots/{model_type}_roc_curve.png")
 
@@ -181,15 +177,15 @@ def log_artifacts_to_mlflow(
     _fig_to_mlflow_artifact(fi_fig, f"plots/{model_type}_feature_importances.png")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        pipeline_path = os.path.join(tmp_dir, "preprocessor.joblib")
+        pipeline_path = Path(tmp_dir) / "preprocessor.joblib"
         joblib.dump(preprocessor, pipeline_path)
-        mlflow.log_artifact(pipeline_path, artifact_path="pipeline")
+        mlflow.log_artifact(str(pipeline_path), artifact_path="pipeline")
 
     y_proba = model.predict_proba(X_test)[:, 1]
     predictions_df = pd.DataFrame({"y_true": y_test, "y_proba": y_proba})
     with tempfile.TemporaryDirectory() as tmp_dir:
-        pred_path = os.path.join(tmp_dir, "test_predictions.csv")
+        pred_path = Path(tmp_dir) / "test_predictions.csv"
         predictions_df.to_csv(pred_path, index=False)
-        mlflow.log_artifact(pred_path, artifact_path="predictions")
+        mlflow.log_artifact(str(pred_path), artifact_path="predictions")
 
     logger.info("Artifacts logged for %s", model_type)

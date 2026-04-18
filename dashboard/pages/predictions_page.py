@@ -1,8 +1,6 @@
 """Predictions page: live inference form and prediction history."""
 
 from datetime import datetime
-from typing import Optional
-
 import requests
 import streamlit as st
 
@@ -18,7 +16,7 @@ PREDICTION_HISTORY_KEY = "prediction_history"
 MAX_HISTORY = 20
 
 
-def _call_api(api_url: str, payload: dict) -> Optional[dict]:
+def _call_api(api_url: str, payload: dict) -> dict | None:
     """POST the customer payload to the prediction API.
 
     Args:
@@ -64,7 +62,7 @@ def _result_alert(probability: float) -> None:
         )
 
 
-def _build_form() -> Optional[dict]:
+def _build_form() -> dict | None:
     """Render the customer input form and return the payload dict on submit.
 
     Returns:
